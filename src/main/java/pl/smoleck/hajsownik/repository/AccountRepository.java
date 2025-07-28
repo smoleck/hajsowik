@@ -1,0 +1,11 @@
+package pl.smoleck.hajsownik.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import pl.smoleck.hajsownik.model.Account;
+import pl.smoleck.hajsownik.model.User;
+
+import java.util.List;
+
+public interface AccountRepository extends JpaRepository<Account, Long> {
+    List<Account> findByUser(User user);
+}
