@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,16 +25,11 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Konfiguracja AuthenticationManager
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder authenticationManagerBuilder =
-                http.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder
-                .userDetailsService(userDetailsService)
-                .passwordEncoder(passwordEncoder());
-        return authenticationManagerBuilder.build();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
+
 
     // Bean do konfiguracji zasad bezpieczeństwa
     @Bean
@@ -45,13 +41,15 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .loginPage("/login") // Strona logowania
-                        .defaultSuccessUrl("/home") // Strona po zalogowaniu
+                        .loginProcessingUrl("/login")
+                        .defaultSuccessUrl("/dashboard", true) // Strona po zalogowaniu
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/login") // Strona po wylogowaniu
+                        .logoutSuccessUrl("/login?logout") // Strona po wylogowaniu
                         .permitAll()
-                );
+                )
+                .csrf(csrf -> csrf.disable()); // Wyłączenie CSRF dla uproszczenia (niezalecane w produkcji)
 
         return http.build();
     }
