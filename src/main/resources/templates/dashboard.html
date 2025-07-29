@@ -13,17 +13,9 @@
 <p th:unless="${#authentication != null}">
     Nie jesteś zalogowany.
 </p>
+<a th:href="@{/accounts}" class="btn btn-primary">📄 Moje konta</a>
 
-<h2>Twoje konta:</h2>
-<ul>
-    <li th:each="account : ${accounts}">
-        <span th:text="${account.name}"></span> -
-        <span th:text="${account.bank}"></span> -
-        <span th:text="${account.balance}"></span>
-    </li>
-</ul>
 
-<a th:href="@{/accounts/add}">Dodaj nowe konto</a>
 <br>
 <form th:action="@{/logout}" method="post">
     <button type="submit">Wyloguj się</button>

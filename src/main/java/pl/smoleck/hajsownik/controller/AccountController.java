@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import pl.smoleck.hajsownik.model.Account;
 import pl.smoleck.hajsownik.model.User;
 import pl.smoleck.hajsownik.repository.AccountRepository;
+import pl.smoleck.hajsownik.service.AccountService;
 
 import java.util.List;
 
@@ -14,38 +15,48 @@ import java.util.List;
 @RequestMapping("/accounts")
 public class AccountController {
 
+    private final AccountService accountService;
+
     @Autowired
-    private AccountRepository accountRepository;
-
-    // Wyświetlenie formularza do dodania konta
-    @GetMapping("/add")
-    public String showAddAccountForm() {
-        return "add-account"; // Zwraca widok add-account.html
+    public AccountController(AccountService accountService) {
+        this.accountService = accountService;
     }
 
-    // Obsługa przesłanego formularza
-    @PostMapping
-    public String addAccount(
-            @RequestParam String name,
-            @RequestParam String bank,
-            @RequestParam double balance,
-            @AuthenticationPrincipal User user) {
-
-        Account account = new Account();
-        account.setName(name);
-        account.setBank(bank);
-        account.setBalance(balance);
-        account.setUser(user);
-
-        accountRepository.save(account);
-        return "redirect:/home"; // Przekieruj na stronę główną po dodaniu konta
-    }
-
-    // Pobranie listy kont zalogowanego użytkownika
     @GetMapping
-    public String getAccounts(@AuthenticationPrincipal User user, Model model) {
-        List<Account> accounts = accountRepository.findByUser(user);
+    public String listAccounts(Model model) {
+        List<Account> accounts = accountService.getAccountsForCurrentUser();
         model.addAttribute("accounts", accounts);
-        return "home"; // Zwraca widok home.html z listą kont
+        return "accounts";
+    }
+
+    @GetMapping("/new")
+    public String showCreateForm(Model model) {
+        model.addAttribute("account", new Account());
+        return "account-form";
+    }
+
+    @PostMapping
+    public String createAccount(@ModelAttribute Account account) {
+        accountService.createAccount(account);
+        return "redirect:/accounts";
+    }
+
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Account account = accountService.getAccountById(id);
+        model.addAttribute("account", account);
+        return "account-form";
+    }
+
+    @PostMapping("/edit/{id}")
+    public String updateAccount(@PathVariable Long id, @ModelAttribute Account account) {
+        accountService.updateAccount(id, account);
+        return "redirect:/accounts";
+    }
+
+    @PostMapping("/delete/{id}")
+    public String deleteAccount(@PathVariable Long id) {
+        accountService.deleteAccount(id);
+        return "redirect:/accounts";
     }
 }

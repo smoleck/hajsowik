@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Moje konta</title>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body>
+<h1>Moje konta</h1>
+
+<a th:href="@{/accounts/new}">➕ Dodaj nowe konto</a>
+<br /><br />
+
+<table border="1" cellpadding="10">
+  <thead>
+  <tr>
+    <th>Nazwa</th>
+    <th>Saldo</th>
+    <th>Bank</th>
+    <th>Akcje</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="account : ${accounts}">
+    <td th:text="${account.name}">Nazwa</td>
+    <td th:text="${account.balance}">Saldo</td>
+    <td th:text="${account.bank}">Bank</td>
+    <td>
+      <a th:href="@{'/accounts/edit/' + ${account.id}}">✏️ Edytuj</a>
+      |
+      <form th:action="@{'/accounts/delete/' + ${account.id}}" method="post" style="display:inline;">
+        <button type="submit" onclick="return confirm('Na pewno chcesz usunąć to konto?');">🗑️ Usuń</button>
+      </form>
+    </td>
+  </tr>
+  </tbody>
+</table>
+
+<br />
+<a th:href="@{/dashboard}">← Powrót do menu</a>
+</body>
+</html>

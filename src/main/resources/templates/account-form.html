@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${account.id} != null ? 'Edytuj konto' : 'Dodaj konto'">Formularz konta</title>
+</head>
+<body>
+<h1 th:text="${account.id} != null ? 'Edytuj konto' : 'Dodaj konto'"></h1>
+
+<form th:action="${account.id} != null ? @{'/accounts/edit/' + ${account.id}} : @{/accounts}" method="post">
+
+  <label for="name">Nazwa konta:</label><br />
+  <input type="text" id="name" name="name" th:value="${account.name}" required /><br /><br />
+
+  <label for="balance">Saldo:</label><br />
+  <input type="number" id="balance" name="balance" th:value="${account.balance}" step="0.01" required /><br /><br />
+
+  <label for="bank">Bank:</label><br />
+  <input type="text" id="bank" name="bank" th:value="${account.bank}" required /><br /><br />
+
+  <button type="submit">Zapisz</button>
+  <a th:href="@{/accounts}">Anuluj</a>
+</form>
+</body>
+</html>
