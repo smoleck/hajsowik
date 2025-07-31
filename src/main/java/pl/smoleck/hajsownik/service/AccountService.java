@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import pl.smoleck.hajsownik.model.Account;
 import pl.smoleck.hajsownik.model.User;
 import pl.smoleck.hajsownik.repository.AccountRepository;
-import pl.smoleck.hajsownik.repository.UserRepository;
 
 import java.util.List;
 
