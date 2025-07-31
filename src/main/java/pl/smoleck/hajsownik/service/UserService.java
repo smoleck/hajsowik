@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import pl.smoleck.hajsownik.model.User;
 import pl.smoleck.hajsownik.repository.UserRepository;
 
+import java.util.Optional;
+
 @Service
 public class UserService {
 
@@ -28,13 +30,10 @@ public class UserService {
     }
 
     // Pobieranie użytkownika po nazwie użytkownika
-    public User findByUsername(String username) {
+    public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
-    // Możesz dodać inne metody do zarządzania użytkownikami, takie jak:
-    // - pobieranie wszystkich użytkowników
-    // - sprawdzanie, czy użytkownik istnieje
     public boolean userExists(String username) {
         return userRepository.findByUsername(username) != null;
     }
@@ -47,12 +46,12 @@ public class UserService {
 
         String username = authentication.getName();
 
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user.isEmpty()) {
             throw new UsernameNotFoundException("Nie znaleziono użytkownika: " + username);
         }
 
-        return user;
+        return user.orElse(null);
     }
 
     // Inne metody związane z zarządzaniem użytkownikami
