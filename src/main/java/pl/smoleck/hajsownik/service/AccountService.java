@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import pl.smoleck.hajsownik.model.Account;
 import pl.smoleck.hajsownik.model.User;
 import pl.smoleck.hajsownik.repository.AccountRepository;
+import pl.smoleck.hajsownik.repository.UserRepository;
 
 import java.util.List;
 
@@ -13,50 +14,53 @@ import java.util.List;
 public class AccountService {
 
     private final AccountRepository accountRepository;
-    private final UserService userService;
+    private final UserRepository userRepository;
 
-    @Autowired
-    public AccountService(AccountRepository accountRepository,
-                          UserService userService) {
+    public AccountService(AccountRepository accountRepository, UserRepository userRepository) {
         this.accountRepository = accountRepository;
-        this.userService = userService;
-    }
-    public List<Account> getAccountsForCurrentUser() {
-        User currentUser = userService.getCurrentUser();
-        return accountRepository.findByUser(currentUser);
+        this.userRepository = userRepository;
     }
 
-    public Account getAccountById(Long id) {
-        return accountRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+    public Account addAccount(Account account, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        account.setUser(user);
+        account.setBalance(account.getBalance());
+        return accountRepository.save(account);
     }
 
-    public void createAccount(Account account) {
-        User currentUser = userService.getCurrentUser();
-        account.setUser(currentUser);
-        accountRepository.save(account);
+    public List<Account> getAccountsForUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return accountRepository.findByUser(user);
     }
 
-    public void updateAccount(Long id, Account updated) {
-        Account existing = getAccountById(id);
-        validateOwnership(existing);
-        existing.setName(updated.getName());
-        existing.setBalance(updated.getBalance());
-        accountRepository.save(existing);
-    }
+    public void transferBetweenAccounts(String username, Long fromId, Long toId, Double amount) {
+        if (amount <= 0) throw new IllegalArgumentException("Amount must be greater than zero");
 
-    public void deleteAccount(Long id) {
-        Account account = getAccountById(id);
-        validateOwnership(account);
-        accountRepository.delete(account);
-    }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-    private void validateOwnership(Account account) {
-        User currentUser = userService.getCurrentUser();
-        if (!account.getUser().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("Brak dostępu do tego konta");
+        Account from = accountRepository.findById(fromId)
+                .orElseThrow(() -> new IllegalArgumentException("Source account not found"));
+        Account to = accountRepository.findById(toId)
+                .orElseThrow(() -> new IllegalArgumentException("Destination account not found"));
+
+        if (!from.getUser().equals(user) || !to.getUser().equals(user)) {
+            throw new IllegalArgumentException("You can only transfer between your own accounts");
         }
+
+        if (from.getBalance() < amount) throw new IllegalArgumentException("Insufficient funds");
+
+        from.setBalance(from.getBalance() - amount);
+        to.setBalance(to.getBalance() + amount);
+
+        accountRepository.save(from);
+        accountRepository.save(to);
     }
+}
 //    public List<Account> getAccountsForCurrentUser() {
 //        User currentUser = userService.getCurrentUser();
 //        return accountRepository.findByUser(currentUser);
@@ -99,4 +103,4 @@ public class AccountService {
 //    }
 
 
-}
+

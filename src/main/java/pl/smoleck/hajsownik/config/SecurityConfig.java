@@ -36,7 +36,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/register", "/login").permitAll() // Publiczne strony
+                        .requestMatchers("/","/api/**", "/register", "/login").permitAll() // Publiczne strony
                         .anyRequest().authenticated() // Wymagaj logowania dla innych stron
                 )
                 .formLogin(form -> form
@@ -50,7 +50,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .csrf(csrf -> csrf.disable()); // Wyłączenie CSRF dla uproszczenia (niezalecane w produkcji)
-
+;
         return http.build();
     }
 }
