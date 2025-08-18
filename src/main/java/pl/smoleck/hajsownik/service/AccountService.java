@@ -83,7 +83,9 @@ public class AccountService {
             throw new IllegalArgumentException("You can only transfer between your own accounts");
         }
 
-        if (from.getBalance() < amount) throw new IllegalArgumentException("Insufficient funds");
+        if (fromId.equals(toId)) {
+            throw new IllegalArgumentException("Cannot transfer to the same account");
+        }
 
         from.setBalance(from.getBalance() - amount);
         to.setBalance(to.getBalance() + amount);

@@ -3,8 +3,7 @@ package pl.smoleck.hajsownik.model;
 public class TransferRequest {
     private Long fromAccountId;
     private Long toAccountId;
-    private Double amount;
-
+    private double amount;
 
     public Long getFromAccountId() {
         return fromAccountId;
@@ -22,11 +21,11 @@ public class TransferRequest {
         this.toAccountId = toAccountId;
     }
 
-    public Double getAmount() {
+    public double getAmount() {
         return amount;
     }
 
-    public void setAmount(Double amount) {
+    public void setAmount(double amount) {
         this.amount = amount;
     }
 }

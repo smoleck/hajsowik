@@ -117,30 +117,36 @@
             }
         });
 
-        // ✅ Obsługa przelewu
-        document.getElementById('transferForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const data = {
-                fromAccountId: document.getElementById('fromAccount').value,
-                toAccountId: document.getElementById('toAccount').value,
-                amount: parseFloat(document.getElementById('amount').value)
-            };
+       // ✅ Obsługa przelewu
+document.getElementById('transferForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const data = {
+        fromAccountId: document.getElementById('fromAccount').value,
+        toAccountId: document.getElementById('toAccount').value,
+        amount: parseFloat(document.getElementById('amount').value)
+    };
 
-            const response = await fetch('/api/transfer', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data),
-                credentials: 'same-origin'
-            });
-
-            if (response.ok) {
-                e.target.reset();
-                await loadAccounts();
-            } else {
-                alert('Błąd podczas przelewu');
-            }
+    try {
+        const response = await fetch('/api/transfer', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
         });
 
+        if (response.ok) {
+            const result = await response.json();
+            e.target.reset();
+            await loadAccounts();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Błąd podczas przelewu ❌');
+        }
+    } catch (err) {
+        alert('Błąd sieci lub serwera ❌');
+        console.error(err);
+    }
+});
         // ✅ Obsługa edycji
         document.getElementById('editForm').addEventListener('submit', async function (e) {
             e.preventDefault();
