@@ -1,63 +1,174 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Dashboard</title>
     <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f4f4f4; }
+        form { margin-bottom: 20px; }
+        #editModal {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            z-index: 1000;
+            width: 300px;
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+    </style>
 </head>
 <body>
-<h1>Twoje konta</h1>
 
-<!-- Lista kont -->
+<h1>Panel użytkownika</h1>
+
+<!-- ✅ Lista kont -->
+<h2>Twoje konta</h2>
 <table id="accountsTable">
     <thead>
     <tr>
         <th>Nazwa</th>
         <th>Bank</th>
         <th>Saldo</th>
+        <th>Akcje</th>
     </tr>
     </thead>
-    <tbody id="accountsBody">
-    <tr th:each="account : ${accounts}">
-        <td th:text="${account.name}"></td>
-        <td th:text="${account.bank}"></td>
-        <td th:text="${#numbers.formatDecimal(account.balance,1,2)}"></td>
-    </tr>
-    </tbody>
+    <tbody id="accountsBody"></tbody>
 </table>
 
-<hr>
-
-<!-- Formularz dodania konta -->
+<!-- ✅ Formularz dodawania konta -->
 <h2>Dodaj konto</h2>
-<form id="accountForm">
+<form id="addAccountForm">
     <label>Nazwa:</label>
-    <input type="text" name="name" id="name" required>
+    <input type="text" id="accountName" required>
     <label>Bank:</label>
-    <input type="text" name="bank" id="bank" required>
+    <input type="text" id="accountBank" required>
     <label>Saldo początkowe:</label>
-    <input type="number" name="balance" id="balance" step="0.01" value="0.00">
-    <button type="submit">Dodaj konto</button>
+    <input type="number" id="accountBalance" step="0.01" required>
+    <button type="submit">Dodaj</button>
 </form>
-<p id="accountResult"></p>
 
-<hr>
-
-<!-- Formularz przelewu -->
-<h2>Przelew</h2>
+<!-- ✅ Formularz przelewu -->
+<h2>Przelew między kontami</h2>
 <form id="transferForm">
-    <label for="fromAccount">Z konta:</label>
-    <select id="fromAccount" name="fromAccountId"></select>
-    <label for="toAccount">Na konto:</label>
-    <select id="toAccount" name="toAccountId"></select>
-    <label for="amount">Kwota:</label>
-    <input type="number" id="amount" name="amount" step="0.01" min="0.01">
+    <label>Z konta:</label>
+    <select id="fromAccount" required></select>
+    <label>Na konto:</label>
+    <select id="toAccount" required></select>
+    <label>Kwota:</label>
+    <input type="number" id="amount" step="0.01" required>
     <button type="submit">Wykonaj przelew</button>
 </form>
-<p id="transferResult"></p>
+
+<!-- ✅ Modal edycji konta -->
+<div id="overlay"></div>
+<div id="editModal">
+    <h3>Edytuj konto</h3>
+    <form id="editForm">
+        <input type="hidden" id="editId">
+        <label>Nazwa:</label>
+        <input type="text" id="editName" required>
+        <label>Bank:</label>
+        <input type="text" id="editBank" required>
+        <label>Saldo:</label>
+        <input type="number" id="editBalance" step="0.01" required>
+        <button type="submit">Zapisz</button>
+        <button type="button" onclick="closeEditModal()">Anuluj</button>
+    </form>
+</div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadAccounts();
+
+        // ✅ Obsługa dodawania konta
+        document.getElementById('addAccountForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('accountName').value,
+                bank: document.getElementById('accountBank').value,
+                balance: parseFloat(document.getElementById('accountBalance').value)
+            };
+
+            const response = await fetch('/api/accounts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                e.target.reset();
+                await loadAccounts();
+            } else {
+                alert('Błąd podczas dodawania konta');
+            }
+        });
+
+        // ✅ Obsługa przelewu
+        document.getElementById('transferForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const data = {
+                fromAccountId: document.getElementById('fromAccount').value,
+                toAccountId: document.getElementById('toAccount').value,
+                amount: parseFloat(document.getElementById('amount').value)
+            };
+
+            const response = await fetch('/api/transfer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                e.target.reset();
+                await loadAccounts();
+            } else {
+                alert('Błąd podczas przelewu');
+            }
+        });
+
+        // ✅ Obsługa edycji
+        document.getElementById('editForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const data = {
+                name: document.getElementById('editName').value,
+                bank: document.getElementById('editBank').value,
+                balance: parseFloat(document.getElementById('editBalance').value)
+            };
+
+            const response = await fetch('/api/accounts/' + id, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                closeEditModal();
+                await loadAccounts();
+            } else {
+                alert('Błąd podczas edycji');
+            }
+        });
+    });
+
     async function loadAccounts() {
-        const response = await fetch('/api/accounts');
+        const response = await fetch('/api/accounts', {credentials: 'same-origin'});
         const accounts = await response.json();
 
         const tbody = document.getElementById('accountsBody');
@@ -72,6 +183,10 @@
                 <td>${account.name}</td>
                 <td>${account.bank}</td>
                 <td>${account.balance.toFixed(2)}</td>
+                <td>
+                    <button onclick="openEditModal(${account.id}, '${account.name}', '${account.bank}', ${account.balance})">Edytuj</button>
+                    <button onclick="deleteAccount(${account.id})">Usuń</button>
+                </td>
             </tr>`;
             tbody.insertAdjacentHTML('beforeend', row);
 
@@ -80,190 +195,35 @@
         });
     }
 
-    // Dodawanie konta
-    document.getElementById('accountForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const data = {
-            name: document.getElementById('name').value,
-            bank: document.getElementById('bank').value,
-            balance: parseFloat(document.getElementById('balance').value)
-        };
+    function openEditModal(id, name, bank, balance) {
+        document.getElementById('editId').value = id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editBank').value = bank;
+        document.getElementById('editBalance').value = balance;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('editModal').style.display = 'block';
+    }
 
-        const response = await fetch('/api/accounts', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+    function closeEditModal() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    async function deleteAccount(id) {
+        if (!confirm('Czy na pewno chcesz usunąć to konto?')) return;
+
+        const response = await fetch('/api/accounts/' + id, {
+            method: 'DELETE',
+            credentials: 'same-origin'
         });
 
-        const result = await response.json();
-        const messageEl = document.getElementById('accountResult');
         if (response.ok) {
-            messageEl.textContent = 'Konto dodane!';
-            await loadAccounts();
-            document.getElementById('accountForm').reset();
-        } else {
-            messageEl.textContent = 'Błąd: ' + result.error;
-        }
-    });
-
-    // Przelew
-    document.getElementById('transferForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        const data = {
-            fromAccountId: document.getElementById('fromAccount').value,
-            toAccountId: document.getElementById('toAccount').value,
-            amount: parseFloat(document.getElementById('amount').value)
-        };
-
-        const response = await fetch('/api/transfer', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-
-        });
-
-        const result = await response.json();
-        const messageEl = document.getElementById('transferResult');
-        if (response.ok) {
-            messageEl.textContent = result.message;
             await loadAccounts();
         } else {
-            messageEl.textContent = 'Błąd: ' + result.error;
+            alert('Błąd podczas usuwania');
         }
-    });
-
-    // Ładowanie kont przy starcie
-    loadAccounts();
+    }
 </script>
+
 </body>
 </html>
-
-<!--<!DOCTYPE html>-->
-<!--<html xmlns:th="http://www.thymeleaf.org">-->
-<!--<head>-->
-<!--    <meta charset="UTF-8" />-->
-<!--    <title>Dashboard</title>-->
-<!--    <style>-->
-<!--        body { font-family: system-ui, sans-serif; padding: 20px; max-width: 1000px; margin: auto; }-->
-<!--        h1 { margin-bottom: 4px; }-->
-<!--        .grid { display: flex; gap: 40px; flex-wrap: wrap; }-->
-<!--        .card { padding: 16px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; flex: 1 1 300px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }-->
-<!--        table { width: 100%; border-collapse: collapse; margin-top: 8px; }-->
-<!--        th, td { padding: 8px 12px; border: 1px solid #ccc; text-align: left; }-->
-<!--        .actions a, .actions button { margin-right: 6px; }-->
-<!--        .inline-form { margin-top: 8px; }-->
-<!--        .flash { padding: 10px; border-radius: 4px; margin-bottom: 12px; }-->
-<!--        .success { background: #e6ffed; border: 1px solid #2d9a4b; color: #1f5f37; }-->
-<!--        .error { background: #ffe6e6; border: 1px solid #b33a3a; color: #7f1d1d; }-->
-<!--        label { display: block; margin-top: 6px; font-size: .9rem; }-->
-<!--        input, select { width: 100%; padding: 6px 8px; margin-top: 2px; box-sizing: border-box; }-->
-<!--        .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; }-->
-<!--        .btn-primary { background: #2563eb; color: white; }-->
-<!--        .btn-secondary { background: #6b7280; color: white; }-->
-<!--        .btn-small { font-size: .8rem; padding: 6px 10px; }-->
-<!--        .flex { display: flex; gap: 10px; align-items: flex-start; }-->
-<!--    </style>-->
-<!--</head>-->
-<!--<body>-->
-
-<!--<h1>Dashboard</h1>-->
-<!--<div>Witaj, <strong th:text="${#authentication.name}">użytkowniku</strong></div>-->
-
-<!--<div th:if="${success}" class="flash success" th:text="${success}"></div>-->
-<!--<div th:if="${error}" class="flash error" th:text="${error}"></div>-->
-
-<!--<div class="grid">-->
-<!--    &lt;!&ndash; Lista kont &ndash;&gt;-->
-<!--    <div class="card" style="flex:2">-->
-<!--        <h2>Twoje konta</h2>-->
-<!--        <table>-->
-<!--            <thead>-->
-<!--            <tr>-->
-<!--                <th>Nazwa</th>-->
-<!--                <th>Saldo</th>-->
-<!--                <th>Bank</th>-->
-<!--                <th>Akcje</th>-->
-<!--            </tr>-->
-<!--            </thead>-->
-<!--            <tbody>-->
-<!--            <tr th:each="account : ${accounts}">-->
-<!--                <td th:text="${account.name}">Nazwa</td>-->
-<!--                <td th:text="${account.balance}">0.00</td>-->
-<!--                <td th:text="${account.bank}">Bank</td>-->
-<!--                <td class="actions">-->
-<!--                    <a th:href="@{'/accounts/edit/' + ${account.id}}" class="btn btn-small">✏️ Edytuj</a>-->
-<!--                    <form th:action="@{'/accounts/delete/' + ${account.id}}" method="post" style="display:inline;">-->
-<!--                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />-->
-<!--                        <button type="submit" class="btn btn-small" onclick="return confirm('Na pewno usunąć to konto?');">🗑️ Usuń</button>-->
-<!--                    </form>-->
-<!--                </td>-->
-<!--            </tr>-->
-<!--            <tr th:if="${accounts == null or #lists.isEmpty(accounts)}">-->
-<!--                <td colspan="4">Brak kont. Dodaj pierwsze konto.</td>-->
-<!--            </tr>-->
-<!--            </tbody>-->
-<!--        </table>-->
-<!--    </div>-->
-
-<!--    &lt;!&ndash; Dodawanie konta &ndash;&gt;-->
-<!--    <div class="card" style="max-width: 360px;">-->
-<!--        <h2>Dodaj nowe konto</h2>-->
-<!--        <form th:action="@{/accounts}" method="post">-->
-<!--            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />-->
-<!--            <label for="name">Nazwa konta</label>-->
-<!--            <input type="text" id="name" name="name" required />-->
-
-<!--            <label for="balance">Saldo początkowe</label>-->
-<!--            <input type="number" id="balance" name="balance" step="0.01" required />-->
-
-<!--            <label for="bank">Bank</label>-->
-<!--            <input type="text" id="bank" name="bank" required />-->
-
-<!--            <div style="margin-top:12px;">-->
-<!--                <button type="submit" class="btn btn-primary">Dodaj konto</button>-->
-<!--            </div>-->
-<!--        </form>-->
-<!--    </div>-->
-
-<!--    &lt;!&ndash; Przelew &ndash;&gt;-->
-<!--    <div class="card" style="max-width: 420px;">-->
-<!--        <h2>Przelew między kontami</h2>-->
-<!--        <form th:action="@{/accounts/transfer}" method="post">-->
-<!--            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />-->
-
-<!--            <div class="flex">-->
-<!--                <div style="flex:1;">-->
-<!--                    <label for="fromAccountId">Z konta</label>-->
-<!--                    <select id="fromAccountId" name="fromAccountId" required>-->
-<!--                        <option value="">&#45;&#45; wybierz &#45;&#45;</option>-->
-<!--                        <option th:each="acct : ${accounts}"-->
-<!--                                th:value="${acct.id}"-->
-<!--                                th:text="${acct.name + ' (' + #numbers.formatDecimal(acct.balance,2,'POINT') + ')'}">-->
-<!--                        </option>-->
-<!--                    </select>-->
-<!--                </div>-->
-<!--                <div style="flex:1;">-->
-<!--                    <label for="toAccountId">Na konto</label>-->
-<!--                    <select id="toAccountId" name="toAccountId" required>-->
-<!--                        <option value="">&#45;&#45; wybierz &#45;&#45;</option>-->
-<!--                        <option th:each="acct : ${accounts}"-->
-<!--                                th:value="${acct.id}"-->
-<!--                                th:text="${acct.name + ' (' + #numbers.formatDecimal(acct.balance,2,'POINT') + ')'}">-->
-<!--                        </option>-->
-<!--                    </select>-->
-<!--                </div>-->
-<!--            </div>-->
-
-<!--            <label for="amount">Kwota</label>-->
-<!--            <input type="number" id="amount" name="amount" step="0.01" required />-->
-
-<!--            <div style="margin-top:12px;">-->
-<!--                <button type="submit" class="btn btn-primary">Przelej</button>-->
-<!--            </div>-->
-<!--        </form>-->
-<!--    </div>-->
-<!--</div>-->
-
-<!--</body>-->
-<!--</html>-->

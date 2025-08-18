@@ -1,6 +1,5 @@
 package pl.smoleck.hajsownik.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import pl.smoleck.hajsownik.model.Account;
@@ -28,6 +27,38 @@ public class AccountService {
         account.setUser(user);
         account.setBalance(account.getBalance());
         return accountRepository.save(account);
+    }
+
+    public Account updateAccount(Long accountId, Account updatedAccount, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Account existing = accountRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        if (!existing.getUser().equals(user)) {
+            throw new AccessDeniedException("You do not have access to this account");
+        }
+
+        existing.setName(updatedAccount.getName());
+        existing.setBalance(updatedAccount.getBalance());
+        existing.setBank(updatedAccount.getBank());
+
+        return accountRepository.save(existing);
+    }
+    public Account deleteAccount(Long accountId, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        if (!account.getUser().equals(user)) {
+            throw new AccessDeniedException("You do not have access to this account");
+        }
+
+        accountRepository.delete(account);
+        return account;
     }
 
     public List<Account> getAccountsForUser(String username) {
@@ -60,6 +91,8 @@ public class AccountService {
         accountRepository.save(from);
         accountRepository.save(to);
     }
+
+
 }
 //    public List<Account> getAccountsForCurrentUser() {
 //        User currentUser = userService.getCurrentUser();
