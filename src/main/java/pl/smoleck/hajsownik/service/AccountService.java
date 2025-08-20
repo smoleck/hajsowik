@@ -42,7 +42,6 @@ public class AccountService {
 
         existing.setName(updatedAccount.getName());
         existing.setBalance(updatedAccount.getBalance());
-        existing.setBank(updatedAccount.getBank());
 
         return accountRepository.save(existing);
     }

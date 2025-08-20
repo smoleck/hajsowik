@@ -10,7 +10,6 @@ public class Account {
     private Long id;
 
     private String name;
-    private String bank;
     private double balance;
 
     @ManyToOne
@@ -33,13 +32,6 @@ public class Account {
         this.name = name;
     }
 
-    public String getBank() {
-        return bank;
-    }
-
-    public void setBank(String bank) {
-        this.bank = bank;
-    }
 
     public double getBalance() {
         return balance;

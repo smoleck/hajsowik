@@ -40,7 +40,6 @@
     <thead>
     <tr>
         <th>Nazwa</th>
-        <th>Bank</th>
         <th>Saldo</th>
         <th>Akcje</th>
     </tr>
@@ -53,8 +52,6 @@
 <form id="addAccountForm">
     <label>Nazwa:</label>
     <input type="text" id="accountName" required>
-    <label>Bank:</label>
-    <input type="text" id="accountBank" required>
     <label>Saldo początkowe:</label>
     <input type="number" id="accountBalance" step="0.01" required>
     <button type="submit">Dodaj</button>
@@ -80,9 +77,6 @@
         <input type="hidden" id="editId">
         <label>Nazwa:</label>
         <input type="text" id="editName" required>
-        <label>Bank:</label>
-        <input type="text" id="editBank" required>
-        <label>Saldo:</label>
         <input type="number" id="editBalance" step="0.01" required>
         <button type="submit">Zapisz</button>
         <button type="button" onclick="closeEditModal()">Anuluj</button>
@@ -98,7 +92,6 @@
             e.preventDefault();
             const data = {
                 name: document.getElementById('accountName').value,
-                bank: document.getElementById('accountBank').value,
                 balance: parseFloat(document.getElementById('accountBalance').value)
             };
 
@@ -153,7 +146,7 @@ document.getElementById('transferForm').addEventListener('submit', async functio
             const id = document.getElementById('editId').value;
             const data = {
                 name: document.getElementById('editName').value,
-                bank: document.getElementById('editBank').value,
+
                 balance: parseFloat(document.getElementById('editBalance').value)
             };
 
@@ -187,10 +180,10 @@ document.getElementById('transferForm').addEventListener('submit', async functio
         accounts.forEach(account => {
             const row = `<tr>
                 <td>${account.name}</td>
-                <td>${account.bank}</td>
+
                 <td>${account.balance.toFixed(2)}</td>
                 <td>
-                    <button onclick="openEditModal(${account.id}, '${account.name}', '${account.bank}', ${account.balance})">Edytuj</button>
+                    <button onclick="openEditModal(${account.id}, '${account.name}',  ${account.balance})">Edytuj</button>
                     <button onclick="deleteAccount(${account.id})">Usuń</button>
                 </td>
             </tr>`;
@@ -204,7 +197,6 @@ document.getElementById('transferForm').addEventListener('submit', async functio
     function openEditModal(id, name, bank, balance) {
         document.getElementById('editId').value = id;
         document.getElementById('editName').value = name;
-        document.getElementById('editBank').value = bank;
         document.getElementById('editBalance').value = balance;
         document.getElementById('overlay').style.display = 'block';
         document.getElementById('editModal').style.display = 'block';
