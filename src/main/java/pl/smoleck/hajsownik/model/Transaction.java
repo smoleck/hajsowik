@@ -12,6 +12,9 @@ public class Transaction {
     private String category;
     private String date;
 
+    @Enumerated(EnumType.STRING)
+    private TransactionType type;
+
     @ManyToOne
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
@@ -62,5 +65,13 @@ public class Transaction {
 
     public void setAccount(Account account) {
         this.account = account;
+    }
+
+    public TransactionType getType() {
+        return type;
+    }
+
+    public void setType(TransactionType type) {
+        this.type = type;
     }
 }
