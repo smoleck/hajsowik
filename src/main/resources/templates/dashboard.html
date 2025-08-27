@@ -9,7 +9,7 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         th { background: #f4f4f4; }
         form { margin-bottom: 20px; }
-        #editModal {
+        #editModal, #editTransactionModal {
             display: none;
             position: fixed;
             top: 50%; left: 50%;
@@ -18,9 +18,9 @@
             border: 1px solid #ccc;
             padding: 20px;
             z-index: 1000;
-            width: 300px;
+            width: 350px;
         }
-        #overlay {
+        #overlay, #transactionOverlay {
             display: none;
             position: fixed;
             top: 0; left: 0;
@@ -69,6 +69,42 @@
     <button type="submit">Wykonaj przelew</button>
 </form>
 
+<!-- ✅ Historia transakcji -->
+<h2>Historia transakcji</h2>
+<table id="transactionsTable">
+    <thead>
+    <tr>
+        <th>Nazwa</th>
+        <th>Kwota</th>
+        <th>Kategoria</th>
+        <th>Typ</th>
+        <th>Data</th>
+        <th>Konto</th>
+        <th>Akcje</th>
+    </tr>
+    </thead>
+    <tbody id="transactionsBody"></tbody>
+</table>
+
+<!-- ✅ Formularz dodawania transakcji -->
+<h2>Dodaj transakcję</h2>
+<form id="addTransactionForm">
+    <label>Nazwa:</label>
+    <input type="text" id="transactionName" required>
+    <label>Kwota:</label>
+    <input type="number" id="transactionAmount" step="0.01" required>
+    <label>Kategoria:</label>
+    <input type="text" id="transactionCategory">
+    <label>Typ:</label>
+    <select id="transactionType" required>
+        <option value="INCOME">Przychód</option>
+        <option value="EXPENSE">Wydatek</option>
+    </select>
+    <label>Konto:</label>
+    <select id="transactionAccount" required></select>
+    <button type="submit">Dodaj</button>
+</form>
+
 <!-- ✅ Modal edycji konta -->
 <div id="overlay"></div>
 <div id="editModal">
@@ -83,11 +119,34 @@
     </form>
 </div>
 
+<!-- ✅ Modal edycji transakcji -->
+<div id="transactionOverlay"></div>
+<div id="editTransactionModal">
+    <h3>Edytuj transakcję</h3>
+    <form id="editTransactionForm">
+        <input type="hidden" id="editTransactionId">
+        <label>Nazwa:</label>
+        <input type="text" id="editTransactionName" required><br>
+        <label>Kwota:</label>
+        <input type="number" id="editTransactionAmount" step="0.01" required><br>
+        <label>Kategoria:</label>
+        <input type="text" id="editTransactionCategory"><br>
+        <label>Typ:</label>
+        <select id="editTransactionType" required>
+            <option value="INCOME">Przychód</option>
+            <option value="EXPENSE">Wydatek</option>
+        </select><br>
+        <button type="submit">Zapisz</button>
+        <button type="button" onclick="closeEditTransactionModal()">Anuluj</button>
+    </form>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         loadAccounts();
+        loadTransactions();
 
-        // ✅ Obsługa dodawania konta
+        // ✅ Dodawanie konta
         document.getElementById('addAccountForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const data = {
@@ -110,43 +169,70 @@
             }
         });
 
-       // ✅ Obsługa przelewu
-document.getElementById('transferForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const data = {
-        fromAccountId: document.getElementById('fromAccount').value,
-        toAccountId: document.getElementById('toAccount').value,
-        amount: parseFloat(document.getElementById('amount').value)
-    };
+        // ✅ Przelew
+        document.getElementById('transferForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const data = {
+                fromAccountId: document.getElementById('fromAccount').value,
+                toAccountId: document.getElementById('toAccount').value,
+                amount: parseFloat(document.getElementById('amount').value)
+            };
 
-    try {
-        const response = await fetch('/api/transfer', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data),
-            credentials: 'same-origin'
+            try {
+                const response = await fetch('/api/transfer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data),
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    e.target.reset();
+                    await loadAccounts();
+                    await loadTransactions();
+                } else {
+                    alert('Błąd podczas przelewu ❌');
+                }
+            } catch (err) {
+                alert('Błąd sieci lub serwera ❌');
+                console.error(err);
+            }
         });
 
-        if (response.ok) {
-            const result = await response.json();
-            e.target.reset();
-            await loadAccounts();
-        } else {
-            const error = await response.json();
-            alert(error.error || 'Błąd podczas przelewu ❌');
-        }
-    } catch (err) {
-        alert('Błąd sieci lub serwera ❌');
-        console.error(err);
-    }
-});
-        // ✅ Obsługa edycji
+        // ✅ Dodawanie transakcji
+        document.getElementById('addTransactionForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const accountId = document.getElementById('transactionAccount').value;
+            const data = {
+                name: document.getElementById('transactionName').value,
+                amount: parseFloat(document.getElementById('transactionAmount').value),
+                category: document.getElementById('transactionCategory').value,
+                type: document.getElementById('transactionType').value,
+                date: new Date().toISOString()
+            };
+
+            const response = await fetch('/api/transactions/' + accountId, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                e.target.reset();
+                await loadTransactions();
+                await loadAccounts();
+            } else {
+                alert('Błąd podczas dodawania transakcji ❌');
+            }
+        });
+
+        // ✅ Edycja konta
         document.getElementById('editForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const id = document.getElementById('editId').value;
             const data = {
                 name: document.getElementById('editName').value,
-
                 balance: parseFloat(document.getElementById('editBalance').value)
             };
 
@@ -164,8 +250,37 @@ document.getElementById('transferForm').addEventListener('submit', async functio
                 alert('Błąd podczas edycji');
             }
         });
+
+        // ✅ Edycja transakcji
+        document.getElementById('editTransactionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editTransactionId').value;
+            const data = {
+                name: document.getElementById('editTransactionName').value,
+                amount: parseFloat(document.getElementById('editTransactionAmount').value),
+                category: document.getElementById('editTransactionCategory').value,
+                type: document.getElementById('editTransactionType').value,
+                date: new Date().toISOString()
+            };
+
+            const response = await fetch('/api/transactions/' + id, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                closeEditTransactionModal();
+                await loadTransactions();
+                await loadAccounts();
+            } else {
+                alert("Błąd przy edycji transakcji ❌");
+            }
+        });
     });
 
+    // ✅ Załaduj konta
     async function loadAccounts() {
         const response = await fetch('/api/accounts', {credentials: 'same-origin'});
         const accounts = await response.json();
@@ -174,16 +289,17 @@ document.getElementById('transferForm').addEventListener('submit', async functio
         tbody.innerHTML = '';
         const fromSelect = document.getElementById('fromAccount');
         const toSelect = document.getElementById('toAccount');
+        const transactionAccount = document.getElementById('transactionAccount');
         fromSelect.innerHTML = '';
         toSelect.innerHTML = '';
+        transactionAccount.innerHTML = '';
 
         accounts.forEach(account => {
             const row = `<tr>
                 <td>${account.name}</td>
-
                 <td>${account.balance.toFixed(2)}</td>
                 <td>
-                    <button onclick="openEditModal(${account.id}, '${account.name}',  ${account.balance})">Edytuj</button>
+                    <button onclick="openEditModal(${account.id}, '${account.name}', ${account.balance})">Edytuj</button>
                     <button onclick="deleteAccount(${account.id})">Usuń</button>
                 </td>
             </tr>`;
@@ -191,34 +307,84 @@ document.getElementById('transferForm').addEventListener('submit', async functio
 
             fromSelect.insertAdjacentHTML('beforeend', `<option value="${account.id}">${account.name}</option>`);
             toSelect.insertAdjacentHTML('beforeend', `<option value="${account.id}">${account.name}</option>`);
+            transactionAccount.insertAdjacentHTML('beforeend', `<option value="${account.id}">${account.name}</option>`);
         });
     }
 
-    function openEditModal(id, name, bank, balance) {
+    // ✅ Załaduj transakcje
+    async function loadTransactions() {
+        const response = await fetch('/api/transactions', {credentials: 'same-origin'});
+        const transactions = await response.json();
+
+        const tbody = document.getElementById('transactionsBody');
+        tbody.innerHTML = '';
+
+        transactions.forEach(tx => {
+            const row = `<tr>
+                <td>${tx.name}</td>
+                <td>${tx.amount.toFixed(2)}</td>
+                <td>${tx.category || '-'}</td>
+                <td>${tx.type}</td>
+                <td>${new Date(tx.date).toLocaleDateString()}</td>
+                <td>${tx.account ? tx.account.name : '-'}</td>
+                <td>
+                    <button onclick="openEditTransactionModal(${tx.id}, '${tx.name}', ${tx.amount}, '${tx.category || ''}', '${tx.type}')">Edytuj</button>
+                    <button onclick="deleteTransaction(${tx.id})">Usuń</button>
+                </td>
+            </tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    // ✅ Modal konto
+    function openEditModal(id, name, balance) {
         document.getElementById('editId').value = id;
         document.getElementById('editName').value = name;
         document.getElementById('editBalance').value = balance;
         document.getElementById('overlay').style.display = 'block';
         document.getElementById('editModal').style.display = 'block';
     }
-
     function closeEditModal() {
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('editModal').style.display = 'none';
     }
 
+    // ✅ Modal transakcja
+    function openEditTransactionModal(id, name, amount, category, type) {
+        document.getElementById('editTransactionId').value = id;
+        document.getElementById('editTransactionName').value = name;
+        document.getElementById('editTransactionAmount').value = amount;
+        document.getElementById('editTransactionCategory').value = category || '';
+        document.getElementById('editTransactionType').value = type;
+        document.getElementById('transactionOverlay').style.display = 'block';
+        document.getElementById('editTransactionModal').style.display = 'block';
+    }
+    function closeEditTransactionModal() {
+        document.getElementById('transactionOverlay').style.display = 'none';
+        document.getElementById('editTransactionModal').style.display = 'none';
+    }
+
+    // ✅ Usuń konto
     async function deleteAccount(id) {
         if (!confirm('Czy na pewno chcesz usunąć to konto?')) return;
-
-        const response = await fetch('/api/accounts/' + id, {
-            method: 'DELETE',
-            credentials: 'same-origin'
-        });
-
+        const response = await fetch('/api/accounts/' + id, {method: 'DELETE', credentials: 'same-origin'});
         if (response.ok) {
             await loadAccounts();
+            await loadTransactions();
         } else {
             alert('Błąd podczas usuwania');
+        }
+    }
+
+    // ✅ Usuń transakcję
+    async function deleteTransaction(id) {
+        if (!confirm('Czy na pewno chcesz usunąć tę transakcję?')) return;
+        const response = await fetch('/api/transactions/' + id, {method: 'DELETE', credentials: 'same-origin'});
+        if (response.ok) {
+            await loadTransactions();
+            await loadAccounts();
+        } else {
+            alert('Błąd podczas usuwania transakcji');
         }
     }
 </script>

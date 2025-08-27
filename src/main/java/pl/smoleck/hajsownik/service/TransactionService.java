@@ -39,6 +39,7 @@ public class TransactionService {
         }
 
         transaction.setAccount(account);
+        transaction.setUser(user);
 
         // Zmiana salda w zależności od typu
         if (transaction.getType() == TransactionType.INCOME) {
@@ -106,4 +107,19 @@ public class TransactionService {
         accountRepository.save(account);
         transactionRepository.delete(transaction);
     }
+
+   public List<Transaction> getTransactionsForAccount(Long accountId, String username) {
+       Account account = accountRepository.findById(accountId)
+               .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+       return transactionRepository.findByAccount(account);
+   }
+
+   public List<Transaction> getAllTransactions(String username) {
+       User user = userRepository.findByUsername(username)
+               .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+       return transactionRepository.findByUser(user);
+
+   }
 }

@@ -37,8 +37,12 @@ public class TransactionController {
         transactionService.deleteTransaction(transactionId, authentication.getName());
     }
 
-    @GetMapping("/account/{accountId}")
-    public List<Transaction> getTransactions(@PathVariable Long accountId, Authentication authentication) {
-        return transactionService.getTransactionsForAccount(accountId, authentication.getName());
+    @GetMapping
+    public List<Transaction> getAllUserTransactions(Authentication authentication) {
+        return transactionService.getAllTransactions(authentication.getName());
     }
+
+
+
+
 }
