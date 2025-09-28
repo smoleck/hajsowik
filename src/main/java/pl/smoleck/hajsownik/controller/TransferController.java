@@ -19,20 +19,7 @@ public class TransferController {
     public TransferController(AccountService accountService) {
         this.accountService = accountService;
     }
-//    @PostMapping("/transfer")
-//    public ResponseEntity<?> transfer(@RequestBody TransferRequest request, Principal principal) {
-//        try {
-//            accountService.transferBetweenAccounts(
-//                    principal.getName(),
-//                    request.getFromAccountId(),
-//                    request.getToAccountId(),
-//                    request.getAmount()
-//            );
-//            return ResponseEntity.ok().body(Map.of("message", "Transfer successful"));
-//        } catch (IllegalArgumentException e) {
-//            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-//        }
-//    }
+
 
     @PostMapping("/transfer")
     public ResponseEntity<?> transfer(@RequestBody TransferRequest request, Principal principal) {
